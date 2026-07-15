@@ -5,9 +5,8 @@ use XiaoPHP\systools\Config\Conf;
 
 class RedisTools
 {
-    var $redis = "";
-    var $pipeline = false;
-    var $queue = [];
+    private $redis;
+    private $pipeline = false;
 
     function __construct()
     {
@@ -44,18 +43,7 @@ class RedisTools
         if (!$this->redis) {
             return $this;
         }
-        if ($this->pipeline) {
-            $this->queue[] = ["method" => $method, "args" => $args];
-            return $this;
-        }
         return $this->redis->$method(...$args);
-    }
-
-    function run()
-    {
-        if (!$this->redis || $this->pipeline) {
-            return $this;
-        }
     }
 
     function exec()
@@ -65,7 +53,6 @@ class RedisTools
         }
         $this->pipeline = false;
         $result = $this->redis->exec();
-        $this->queue = [];
         return $result ?: [];
     }
 

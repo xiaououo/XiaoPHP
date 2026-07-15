@@ -14,7 +14,7 @@
 
         public static function add($method,$url,$controller,$bootstrap ): void
             {
-                self::$routes[$url] = $method.":".$controller.":".$bootstrap;
+                self::$routes[strtolower($url)] = $method.":".$controller.":".$bootstrap;
             }
 
         public static function get():array
@@ -24,6 +24,6 @@
 
         public static function find(string $url): ?string
             {
-                return self::$routes[$url] ?? null;
+                return self::$routes[strtolower($url)] ?? null;
             }
     }

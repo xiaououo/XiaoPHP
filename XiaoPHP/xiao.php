@@ -7,7 +7,7 @@ $art = '
   > ^ < 
   
 SystemName: XiaoPHP 
-Version: 1.5.0
+Version: 1.6.0
 Author: 小新
 
 ';

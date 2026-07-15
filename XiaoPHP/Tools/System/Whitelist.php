@@ -15,7 +15,7 @@ class Whitelist
 
     public static function add(string $url): void
     {
-        self::$whitelist[] = $url;
+        self::$whitelist[] = strtolower($url);
     }
 
     public static function get(): array
@@ -25,12 +25,13 @@ class Whitelist
 
     public static function check(string $url): bool
     {
+        $url = strtolower($url);
         foreach (self::$whitelist as $pattern) {
             if ($pattern === $url) {
                 return true;
             }
             if (strpos($pattern, '*') !== false) {
-                $regex = '#^' . str_replace('\*', '.*', preg_quote($pattern, '#')) . '$#';
+                $regex = '#^' . str_replace('\*', '.*', preg_quote($pattern, '#')) . '$#i';
                 if (preg_match($regex, $url)) {
                     return true;
                 }

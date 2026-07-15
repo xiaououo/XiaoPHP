@@ -30,6 +30,7 @@ class Middleware
     public function check(): void
     {
         $path = '/' . trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+        $path = strtolower($path);
 
         if (Whitelist::check($path)) {
             return;

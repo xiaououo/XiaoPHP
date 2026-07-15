@@ -5,7 +5,7 @@ use XiaoPHP\systools\Config\Conf;
 
 class MysqlTools
 {
-    var $pdo = "";
+    private $pdo;
 
     function __construct()
     {
@@ -13,14 +13,15 @@ class MysqlTools
             $conf = Conf::get("Mysql");
             $dsn =
                 "mysql:host=" . $conf["host"] . ";port=" . $conf["port"] . ";dbname=" . $conf["dbname"];
-            $this->pdo = new PDO($dsn, $conf["user"], $conf["password"]);
-        } catch (PDOException $e) {
+            $this->pdo = new \PDO($dsn, $conf["user"], $conf["password"]);
+        } catch (\PDOException $e) {
             $this->error($e->getMessage());
         }
     }
-    var $table = "";
-    var $limit = "";
-    var $offset = "";
+    private $table = "";
+    private $limit = "";
+    private $offset = "";
+    private $orderBy = "";
     function table($table)
     {
         $this->table = $table;
@@ -28,6 +29,7 @@ class MysqlTools
         $this->whereLike = [];
         $this->limit = "";
         $this->offset = "";
+        $this->orderBy = "";
         return $this;
     }
     function limit($n)
@@ -40,7 +42,7 @@ class MysqlTools
         $this->offset = (int) $n;
         return $this;
     }
-    var $where = [];
+    private $where = [];
     function where($column, $value)
     {
         if (is_array($value)) {
@@ -65,7 +67,7 @@ class MysqlTools
         }
         return $this;
     }
-    var $whereLike = [];
+    private $whereLike = [];
     function whereLike($column, $value, $position = "both")
     {
         if ($position == "left") {
@@ -96,7 +98,7 @@ class MysqlTools
     function whereFullLike($value)
     {
         $stmt = $this->pdo->query("SHOW COLUMNS FROM `{$this->table}`");
-        $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $columns = $stmt->fetchAll(\PDO::FETCH_COLUMN);
         $parts = [];
         foreach ($columns as $i => $col) {
             $key = ":full_like_" . $i;
@@ -108,11 +110,16 @@ class MysqlTools
         }
         return $this;
     }
+    function order($orderBy)
+    {
+        $this->orderBy = $orderBy;
+        return $this;
+    }
     function getMinMaxId()
     {
         $sql = "SELECT MIN(id) AS min_id,MAX(id) AS max_id FROM `{$this->table}`";
         $stmt = $this->pdo->query($sql);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         return [
             "min_id" => (int) ($row["min_id"] ?? 0),
             "max_id" => (int) ($row["max_id"] ?? 0),
@@ -128,6 +135,9 @@ class MysqlTools
             $where = " WHERE " . implode(" AND ", $this->where);
         }
         $sql = "SELECT * FROM `{$this->table}`{$where}";
+        if ($this->orderBy !== "") {
+            $sql .= " ORDER BY " . $this->orderBy;
+        }
         if ($this->limit !== "") {
             $sql .= " LIMIT " . $this->limit;
             if ($this->offset !== "") {
@@ -139,7 +149,8 @@ class MysqlTools
         $this->where = [];
         $this->limit = "";
         $this->offset = "";
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $this->orderBy = "";
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     function first()
@@ -151,11 +162,16 @@ class MysqlTools
             unset($this->where["bind"]);
             $where = " WHERE " . implode(" AND ", $this->where);
         }
-        $sql = "SELECT * FROM `{$this->table}`{$where} LIMIT 1";
+        $sql = "SELECT * FROM `{$this->table}`{$where}";
+        if ($this->orderBy !== "") {
+            $sql .= " ORDER BY " . $this->orderBy;
+        }
+        $sql .= " LIMIT 1";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($binds);
         $this->where = [];
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $this->orderBy = "";
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     function delete()
