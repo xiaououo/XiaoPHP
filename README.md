@@ -1,7 +1,7 @@
 # XiaoPHP V1.5.0 使用文档
 
 > 基于 PHP 的轻量级 MVC 微框架，适合小型项目快速开发  
-> Author: 小新 | License: MIT
+> Author: 小新 | License: Apache-2.0
 
 ---
 
