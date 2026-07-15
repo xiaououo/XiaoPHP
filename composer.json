@@ -1,0 +1,14 @@
+{
+    "name": "xiaououo/xiaophp",
+    "description": "基于 PHP 的轻量级 MVC 框架，适合小型项目快速开发",
+    "type": "project",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "小新",
+            "email": "xiao@xiaououo.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
