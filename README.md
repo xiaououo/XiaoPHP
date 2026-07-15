@@ -1,1023 +1,57 @@
-# XiaoPHP V1.5.0 使用文档
+# XiaoPHP 1\.6 开发文档
+ 
 
-> 基于 PHP 的轻量级 MVC 微框架，适合小型项目快速开发  
-> Author: 小新 | License: Apache-2.0
+# 一、框架简介
 
----
+XiaoPHP（小新PHP）是一款由国人开发的轻量级 PHP MVC 框架，专为小型项目、API 接口、管理后台的快速开发设计。框架采用原生 PHP 编写，零第三方依赖，部署简单，上手容易。
 
-## 目录
+**当前版本：**V1\.6\.0
 
-- [一、环境要求](#一环境要求)
-- [二、快速开始](#二快速开始)
-- [三、目录结构](#三目录结构)
-- [四、配置说明](#四配置说明)
-- [五、路由系统](#五路由系统)
-- [六、控制器](#六控制器)
-- [七、中间件（令牌认证）](#七中间件令牌认证)
-- [八、白名单](#八白名单)
-- [九、视图模板](#九视图模板)
-- [十、数据库操作](#十数据库操作)
-- [十一、Redis 操作](#十一redis-操作)
-- [十二、缓存系统](#十二缓存系统)
-- [十三、日志系统](#十三日志系统)
-- [十四、HTTP 请求工具](#十四http-请求工具)
-- [十五、JSON 工具](#十五json-工具)
-- [十六、加密工具](#十六加密工具)
-- [十七、阿里云 DNS 操作](#十七阿里云-dns-操作)
-- [十八、IP 地址获取](#十八ip-地址获取)
-- [十九、错误处理与调试](#十九错误处理与调试)
-- [二十、Web 服务器配置](#二十web-服务器配置)
+**开源协议：**Apache\-2\.0
 
----
+**作者：**小新
 
-## 一、环境要求
+**核心特点：**零依赖、轻量级、MVC 架构、开箱即用
 
-- PHP >= 7.4
-- 推荐扩展：`pdo_mysql`、`redis`、`openssl`、`curl`
-- Composer（用于自动加载）
+# 二、环境要求
 
----
+|组件|要求|
+|---|---|
+|PHP 版本|\>= 7\.4|
+|必选扩展|openssl、curl、pdo\_mysql、json|
+|可选扩展|redis（用于 Redis 缓存功能）|
+|Composer|可选，推荐使用|
 
-## 二、快速开始
+# 三、安装部署
 
-### 2.1 项目部署
-
-将项目放置到 Web 服务器目录下，确保 `Public/` 目录为网站根目录。
-
-### 2.2 配置环境变量
-
-编辑项目根目录下的 `.env` 文件：
-
-```env
-# 数据库
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=xiaophp
-DB_USER=root
-DB_PASSWORD=123456
-
-# Redis
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
-# 调试模式
-DEBUG=true
-```
-
-### 2.3 安装依赖
+## 3\.1 Composer 安装（推荐）
 
 ```bash
-composer install
+composer create-project xiaououo/xiaophp 项目名
 ```
 
-### 2.4 启动开发服务器
+## 3\.2 手动安装
 
-```bash
-php -S localhost:8080 -t Public/ Public/router.php
-```
+下载压缩包解压到网站目录即可，无需额外安装步骤。
 
-浏览器访问 `http://localhost:8080` 即可看到默认首页。
+## 3\.3 部署配置
 
----
+**网站根目录必须指向 Public/ 目录**，这是 MVC 框架的统一规范，保护其他目录不被直接访问。
 
-## 三、目录结构
+### Apache 部署
 
-```
-XiaoPHPV1.5/
-├── Public/                # Web 入口目录（网站根目录）
-│   ├── index.php          # 应用入口文件
-│   ├── router.php         # PHP 内置服务器路由脚本
-│   ├── .htaccess          # Apache URL 重写规则
-│   └── nginx.htaccess     # Nginx URL 重写参考
-├── XiaoPHP/               # 框架核心
-│   ├── console.php        # 系统加载器
-│   ├── Routing.php        # 路由分发器
-│   ├── Middleware.php     # 中间件（令牌认证）
-│   ├── debug.php          # 调试错误页面
-│   ├── xiao.php           # 品牌标识
-│   ├── Error/             # 错误页面（401/403/404 HTML模板）
-│   │   └── error.php      # 错误处理函数
-│   └── Tools/             # 工具类库
-│       ├── System/        # 系统工具类
-│       └── Code/          # 业务工具类
-├── Config/                # 配置文件目录
-├── Route/                 # 自定义路由定义
-├── Whitelist/             # 白名单定义
-├── App/                   # 应用目录
-│   └── Run/               # 控制器目录
-├── view/                  # 视图模板目录
-├── logs/                  # 日志文件目录
-├── vendor/                # Composer 依赖
-└── .env                   # 环境变量配置
-```
-
----
-
-## 四、配置说明
-
-所有配置文件位于 `Config/` 目录，返回 PHP 数组。
-
-### 4.1 应用配置 `Config/App.php`
-
-```php
-return [
-    "debug" => Env::Load(null, "DEBUG") ?? 'false',  // 调试模式：true | false
-    "error" => 'html',                                 // 错误响应格式：html | json
-];
-```
-
-| 配置项 | 说明 |
-|--------|------|
-| `debug` | 调试模式，`true` 时显示详细错误页面，`false` 时显示简洁提示 |
-| `error` | 错误响应格式，`html` 返回 HTML 错误页面（需有对应 Error 模板），`json` 返回 JSON |
-
-### 4.2 缓存配置 `Config/Cache.php`
-
-```php
-return [
-    "dir"    => __DIR__ . '/../../Temp/Cache/',  // 缓存文件存放目录
-    "expire" => '3600',                           // 默认过期时间（秒）
-];
-```
-
-### 4.3 数据库配置 `Config/Mysql.php`
-
-```php
-return [
-    "host"     => Env::Load(null, "DB_HOST") ?? 'localhost',
-    "port"     => Env::Load(null, "DB_PORT") ?? '3306',
-    "user"     => Env::Load(null, "DB_USER") ?? 'root',
-    "password" => Env::Load(null, "DB_PASSWORD") ?? '123456',
-    "dbname"   => Env::Load(null, "DB_NAME") ?? 'xiaophp',
-];
-```
-
-### 4.4 Redis 配置 `Config/Redis.php`
-
-```php
-return [
-    "host"     => Env::Load(null, "REDIS_HOST") ?? '127.0.0.1',
-    "port"     => Env::Load(null, "REDIS_PORT") ?? '6379',
-    "password" => Env::Load(null, "REDIS_PASSWORD") ?? '',
-];
-```
-
-### 4.5 中间件配置 `Config/Middleware.php`
-
-```php
-return [
-    "storage"       => 'cache',                      // 存储方式：cache | redis
-    "token_key"     => 'token',                      // 令牌参数名
-    "auth_mode"     => 'bearer,get,post,cookie',     // 认证方式
-    "cookie_name"   => 'auth_token',                 // Cookie 名称
-    "cookie_expire" => '7200',                       // 默认过期时间（秒）
-];
-```
-
-### 4.6 日志配置 `Config/Logs.php`
-
-```php
-return [
-    "success" => 'true',  // 是否记录成功日志
-    "error"   => 'true',  // 是否记录错误日志
-];
-```
-
-### 4.7 阿里云 DNS 配置 `Config/AliyunDns.php`
-
-```php
-return [
-    "accessKeyId"     => '',  // 阿里云 AccessKey ID
-    "accessKeySecret" => '',  // 阿里云 AccessKey Secret
-];
-```
-
-### 4.8 读取配置
-
-使用 `Conf` 类读取任意配置：
-
-```php
-use XiaoPHP\systools\Config\Conf;
-
-$config = Conf::get("App");       // 读取 Config/App.php
-$debug  = $config['debug'];       // 获取配置项
-```
-
-### 4.9 环境变量读取
-
-```php
-use XiaoPHP\systools\Config\Env;
-
-// 读取 .env 中指定 key
-$value = Env::Load(null, "DB_HOST");  // 返回 '127.0.0.1'
-
-// 获取已加载的环境变量
-$debug = Env::get("DEBUG", "false");  // 第二个参数为默认值
-```
-
----
-
-## 五、路由系统
-
-### 5.1 自动路由（默认）
-
-URL 格式：`http://域名/控制器名/方法名`
-
-规则：
-- URL 第一段对应 `App/Run/` 目录下的控制器文件名（类名）
-- URL 第二段对应控制器中的方法名
-- 不指定方法时默认调用 `Main()` 方法
-
-示例：
-
-| URL | 对应文件 | 调用方法 |
-|-----|---------|---------|
-| `/` | 走自定义路由 → `App/Run/Index.php` | `Index::Main()` |
-| `/Index/Main` | `App/Run/Index.php` | `Index::Main()` |
-| `/User/Login` | `App/Run/User.php` | `User::Login()` |
-| `/User` | `App/Run/User.php` | `User::Main()` |
-
-### 5.2 自定义路由
-
-在 `Route/Route.php` 中定义：
-
-```php
-use XiaoPHP\systools\Config\Route;
-
-// 格式：Route::add("请求方法", "URL路径", "控制器名/方法名", "控制器目录");
-Route::add("GET",  "/",           "Index",          "App/Run");
-Route::add("POST", "/api/login",  "Auth/Login",     "App/Run");
-Route::add("GET",  "/user/info",  "User/GetInfo",   "App/Run");
-```
-
-自定义路由优先级高于自动路由。路由匹配时会验证 HTTP 请求方法。
-
----
-
-## 六、控制器
-
-### 6.1 创建控制器
-
-在 `App/Run/` 目录下创建控制器文件，文件名与类名一致：
-
-```php
-<?php
-// App/Run/User.php
-
-use XiaoPHP\systools\Middleware;
-use XiaoPHP\systools\toolsbox\View;
-
-class User
-{
-    public function Main()
-    {
-        // 默认入口方法
-    }
-
-    public function Login()
-    {
-        // 登录方法
-    }
-}
-```
-
-### 6.2 完整示例
-
-```php
-<?php
-// App/Run/Index.php
-
-use XiaoPHP\systools\Middleware;
-use XiaoPHP\systools\toolsbox\View;
-
-class Index
-{
-    public function Main()
-    {
-        // 中间件认证检查
-        (new Middleware())->check();
-
-        // 渲染视图
-        $view = new View();
-        $data = [
-            "title" => "你好世界！",
-            "h1"    => "Hello World"
-        ];
-        $view->set($data, "index")->show("index");
-    }
-}
-```
-
----
-
-## 七、中间件（令牌认证）
-
-### 7.1 认证流程
-
-中间件在控制器方法中手动调用 `(new Middleware())->check()` 进行令牌验证。如果 URL 在白名单中，则跳过验证。
-
-### 7.2 支持的认证方式
-
-配置文件 `auth_mode` 支持多种认证方式，可组合使用（逗号分隔）：
-
-| 方式 | 说明 |
-|------|------|
-| `bearer` | 从 HTTP 请求头 `Authorization: Bearer <token>` 获取 |
-| `get` | 从 URL 参数 `?token=xxx` 获取 |
-| `post` | 从 POST 数据 `token=xxx` 获取 |
-| `cookie` | 从 Cookie `auth_token` 获取 |
-
-### 7.3 设置令牌
-
-```php
-use XiaoPHP\systools\Middleware;
-
-$middleware = new Middleware();
-
-// 设置令牌（默认过期时间 7200 秒）
-$middleware->setToken('my_token_value', ['user_id' => 1]);
-
-// 自定义过期时间
-$middleware->setToken('my_token_value', ['user_id' => 1], 3600);
-```
-
-### 7.4 删除令牌
-
-```php
-$middleware = new Middleware();
-$middleware->delToken('my_token_value');
-```
-
-### 7.5 存储方式
-
-- **cache**（默认）：令牌存储在文件缓存中（`Temp/Cache/` 目录）
-- **redis**：令牌存储在 Redis 中，Redis 不可用时自动降级为文件缓存
-
----
-
-## 八、白名单
-
-在 `Whitelist/Whitelist.php` 中定义不需要认证的 URL：
-
-```php
-use XiaoPHP\systools\Config\Whitelist;
-
-// 精确匹配
-Whitelist::add("/Index/Main");
-Whitelist::add("/api/health");
-
-// 通配符匹配
-Whitelist::add("/api/public/*");
-Whitelist::add("/static/*");
-```
-
----
-
-## 九、视图模板
-
-### 9.1 模板语法
-
-视图文件放在 `view/` 目录下，使用 `.html` 扩展名。支持 `{{$变量名}}` 语法输出变量，支持点号访问数组：
-
-```html
-<!-- view/index/index.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{$title}}</title>
-</head>
-<body>
-    <h1>{{$h1}}</h1>
-    <p>{{$user.name}}</p>   <!-- 对应 $user['name'] -->
-</body>
-</html>
-```
-
-### 9.2 渲染视图
-
-```php
-use XiaoPHP\systools\toolsbox\View;
-
-$view = new View();
-
-// 设置数据并指定子目录
-$view->set([
-    "title" => "我的页面",
-    "h1"    => "欢迎光临",
-    "user"  => ["name" => "小明"]
-], "index")->show("index");
-
-// 链式调用
-$view->set(["title" => "首页"], "index")
-     ->set(["h1" => "Hello"], "index")
-     ->show("index");
-```
-
-### 9.3 安全特性
-
-- 视图路径自动过滤 `..` 和 `.`，防止目录穿越
-- 文件名过滤特殊字符，仅允许 `[a-zA-Z0-9_\-.]`
-- 使用 `realpath()` 校验，确保模板文件在 `view/` 目录内
-
----
-
-## 十、数据库操作
-
-### 10.1 快速使用
-
-使用全局辅助函数 `db()` 获取数据库实例：
-
-```php
-$db = db();
-```
-
-或手动实例化：
-
-```php
-use app\tools\MysqlTools;
-
-$db = new MysqlTools();
-```
-
-### 10.2 查询数据
-
-```php
-// 查询全部
-$users = db()->table('users')->get();
-
-// 条件查询
-$user = db()->table('users')->where('id', 1)->first();
-
-// 多条件查询
-$list = db()->table('users')
-    ->where('status', '1')
-    ->where('age', '>= 18')
-    ->get();
-
-// IN 查询
-$list = db()->table('users')
-    ->where('id', [1, 2, 3])
-    ->get();
-
-// 分页查询
-$list = db()->table('users')
-    ->limit(10)
-    ->offset(0)
-    ->get();
-```
-
-### 10.3 模糊查询
-
-```php
-// 单字段模糊匹配
-db()->table('users')->whereLike('name', '小')->get();
-
-// 左匹配（%value）
-db()->table('users')->whereLike('name', '小', 'left')->get();
-
-// 右匹配（value%）
-db()->table('users')->whereLike('name', '小', 'right')->get();
-
-// 多字段模糊匹配
-db()->table('users')->whereMultiLike(['name', 'email'], '小')->get();
-
-// 全字段模糊匹配（自动获取表的所有列）
-db()->table('users')->whereFullLike('小')->get();
-```
-
-### 10.4 插入数据
-
-```php
-$id = db()->table('users')->insert([
-    'name'  => '小明',
-    'email' => 'xiaoming@example.com',
-    'age'   => 18,
-]);
-// 返回插入后的自增 ID
-```
-
-### 10.5 更新数据
-
-```php
-$affected = db()->table('users')
-    ->where('id', 1)
-    ->update([
-        'name' => '新名字',
-        'age'  => 20,
-    ]);
-// 返回受影响的行数
-```
-
-> **注意**：`update()` 和 `delete()` 必须带 `WHERE` 条件，否则会报错。
-
-### 10.6 删除数据
-
-```php
-$affected = db()->table('users')->where('id', 1)->delete();
-```
-
-### 10.7 获取最小/最大 ID
-
-```php
-$range = db()->table('users')->getMinMaxId();
-// 返回 ['min_id' => 1, 'max_id' => 100]
-```
-
-### 10.8 关闭连接
-
-```php
-db()->close();
-```
-
----
-
-## 十一、Redis 操作
-
-### 11.1 基本使用
-
-```php
-use app\tools\RedisTools;
-
-$redis = new RedisTools();
-
-// 字符串操作
-$redis->set('key', 'value');
-$value = $redis->get('key');
-$redis->del('key');
-
-// 哈希操作
-$redis->hSet('hash', 'field', 'value');
-$value = $redis->hGet('hash', 'field');
-
-// 过期时间
-$redis->expire('key', 3600);
-$ttl = $redis->ttl('key');
-
-// 检查是否存在
-$exists = $redis->exists('key');
-```
-
-### 11.2 Pipeline 管道模式
-
-```php
-$redis = new RedisTools();
-
-// 开启管道
-$redis->pipeline();
-
-// 批量操作入队
-$redis->set('key1', 'value1');
-$redis->set('key2', 'value2');
-$redis->set('key3', 'value3');
-
-// 执行管道
-$results = $redis->exec();
-```
-
-### 11.3 可用性检查
-
-```php
-$redis = new RedisTools();
-
-if ($redis->isAvailable()) {
-    // Redis 可用
-    $redis->set('key', 'value');
-} else {
-    // Redis 不可用，走降级逻辑
-}
-```
-
-> **注意**：Redis 扩展未安装或连接失败时，`RedisTools` 会自动降级，所有操作返回 null 或空，不会抛出异常。
-
----
-
-## 十二、缓存系统
-
-### 12.1 基本使用
-
-```php
-use XiaoPHP\systools\System\Cache;
-
-$cache = new Cache();
-
-// 设置缓存（默认过期时间从配置读取）
-$cache->set('my_key', ['name' => '小明', 'age' => 18]);
-
-// 设置缓存并指定过期时间（秒）
-$cache->set('my_key', $data, 1800);
-
-// 获取缓存
-$data = $cache->get('my_key');
-
-// 删除缓存
-$cache->delete('my_key');
-
-// 清空所有缓存
-$cache->clear();
-```
-
-### 12.2 缓存原理
-
-- 缓存文件存储在 `Temp/Cache/` 目录（可在配置中修改）
-- 文件名 = `md5(key).txt`
-- 内容为序列化数组：`['expire' => 过期时间戳, 'data' => 数据]`
-- 读取时自动检查过期，过期则删除文件并返回 `null`
-
----
-
-## 十三、日志系统
-
-### 13.1 自动日志
-
-框架在路由处理过程中自动记录日志，无需手动调用。日志分为两类：
-
-- **成功日志**：请求成功时记录，存储于 `logs/success/`
-- **错误日志**：请求失败时记录，存储于 `logs/error/`
-
-### 13.2 手动记录日志
-
-```php
-use XiaoPHP\systools\System\Logs;
-
-$logs = new Logs();
-
-// 记录成功日志
-$logs->logs(0, 200);  // 参数1：0=成功，参数2：状态码
-
-// 记录错误日志
-$logs->logs(1, 404);  // 参数1：1=错误，参数2：状态码
-```
-
-### 13.3 日志格式
-
-```
-success 2026-07-14 12:30:00--[192.168.1.1]:/Index/Main-code:200
-error 2026-07-14 12:30:05--[192.168.1.2]:/User/Login-code:404
-```
-
-日志按天分割，文件名格式：`2026-07-14.logs`
-
-### 13.4 日志配置
-
-在 `Config/Logs.php` 中控制是否记录：
-
-```php
-return [
-    "success" => 'true',   // 设为 'false' 关闭成功日志
-    "error"   => 'true',   // 设为 'false' 关闭错误日志
-];
-```
-
----
-
-## 十四、HTTP 请求工具
-
-### 14.1 GET 请求
-
-```php
-use XiaoPHP\systools\toolsbox\Wget;
-
-// 简单 GET 请求
-$response = Wget::get('https://api.example.com/data');
-
-// 启用 SSL 验证
-$response = Wget::get('https://api.example.com/data', true);
-
-// 自定义 cURL 选项
-$response = Wget::get('https://api.example.com/data', false, [
-    CURLOPT_TIMEOUT        => 60,
-    CURLOPT_HTTPHEADER     => ['Authorization: Bearer token123'],
-]);
-```
-
-### 14.2 POST 请求
-
-```php
-// 表单数据（自动设置 Content-Type: application/x-www-form-urlencoded）
-$response = Wget::post('https://api.example.com/login', [
-    'username' => 'admin',
-    'password' => '123456',
-]);
-
-// JSON 数据（传入字符串自动设置 Content-Type: application/json）
-$response = Wget::post('https://api.example.com/user', json_encode([
-    'name' => '小明',
-    'age'  => 18,
-]));
-```
-
-### 14.3 PUT 请求
-
-```php
-$response = Wget::put('https://api.example.com/user/1', [
-    'name' => '新名字',
-]);
-```
-
-### 14.4 DELETE 请求
-
-```php
-$response = Wget::delete('https://api.example.com/user/1');
-```
-
-### 14.5 文件下载
-
-```php
-$result = Wget::download(
-    'https://example.com/file.zip',
-    '/path/to/save/file.zip'
-);
-
-if ($result === true) {
-    echo "下载成功";
-} else {
-    echo "下载失败：" . $result['error'];
-}
-```
-
-### 14.6 错误处理
-
-所有 HTTP 方法在出错时返回包含 `error` 和 `http_code` 的数组：
-
-```php
-$response = Wget::get('https://api.example.com/data');
-
-if (is_array($response) && isset($response['error'])) {
-    echo "请求失败：" . $response['error'];
-    echo "HTTP 状态码：" . $response['http_code'];
-} else {
-    // 请求成功，$response 为响应内容
-}
-```
-
----
-
-## 十五、JSON 工具
-
-### 15.1 输出 JSON 响应
-
-```php
-use XiaoPHP\systools\toolsbox\Json;
-
-// 直接输出 JSON 并终止请求
-Json::encode([
-    'code' => 200,
-    'msg'  => '成功',
-    'data' => ['id' => 1, 'name' => '小明']
-]);
-// 自动设置 Content-Type: application/json
-```
-
-### 15.2 解码 JSON
-
-```php
-$array = Json::decode('{"name":"小明","age":18}');
-// 返回关联数组
-```
-
-### 15.3 远程 JSON 请求
-
-```php
-// 请求远程 JSON 接口并自动解码
-$data = Json::wdecode('https://api.example.com/data');
-
-// 启用 SSL 验证
-$data = Json::wdecode('https://api.example.com/data', true);
-
-// 自定义 cURL 选项
-$data = Json::wdecode('https://api.example.com/data', false, [
-    CURLOPT_TIMEOUT => 10,
-]);
-```
-
----
-
-## 十六、加密工具
-
-### 16.1 AES 加密
-
-```php
-use XiaoPHP\systools\toolsbox\AesTool;
-
-// 加密（默认 AES-128-ECB）
-$encrypted = AesTool::encode('Hello World', 'my_secret_key');
-
-// 解密
-$decrypted = AesTool::decode($encrypted, 'my_secret_key');
-
-// 指定加密算法
-$encrypted = AesTool::encode('Hello World', 'my_key', 'AES-256-ECB');
-
-// 使用 CBC 模式（需要 IV）
-$iv = '1234567890123456';  // 16 字节
-$encrypted = AesTool::encode('Hello World', 'my_key', 'AES-128-CBC', $iv);
-$decrypted = AesTool::decode($encrypted, 'my_key', 'AES-128-CBC', $iv);
-```
-
-> 密钥通过 SHA1-PRNG 算法派生到对应长度，无需手动补全密钥长度。
-
-### 16.2 RSA 加密
-
-```php
-use XiaoPHP\systools\toolsbox\RSATool;
-
-$rsa = new RSATool();
-
-// 公钥加密
-$encrypted = $rsa->encode('Hello World', $publicKey);
-
-// 私钥解密
-$decrypted = $rsa->decode($encrypted, $privateKey);
-```
-
-> 公钥会自动添加 `-----BEGIN PUBLIC KEY-----` 头部和换行，私钥需是完整的 PEM 格式字符串。
-
----
-
-## 十七、阿里云 DNS 操作
-
-### 17.1 配置
-
-在 `Config/AliyunDns.php` 中配置阿里云密钥：
-
-```php
-return [
-    "accessKeyId"     => 'your-access-key-id',
-    "accessKeySecret" => 'your-access-key-secret',
-];
-```
-
-### 17.2 实例化
-
-```php
-use app\tools\AliyunDns;
-
-$dns = new AliyunDns();
-```
-
-### 17.3 获取域名列表
-
-```php
-$result = $dns->domains();
-// 返回 ['code' => 200, 'data' => [...], 'total' => N]
-```
-
-### 17.4 获取解析记录列表
-
-```php
-// 获取所有记录
-$result = $dns->list();
-
-// 获取指定域名记录
-$result = $dns->list('example.com');
-```
-
-### 17.5 查询解析记录
-
-```php
-$result = $dns->get([
-    'domain' => 'example.com',
-    'rr'     => 'www',      // 主机记录
-    'record' => 'A',        // 记录类型
-]);
-```
-
-### 17.6 添加解析记录
-
-```php
-$result = $dns->add([
-    'domain'   => 'example.com',
-    'rr'       => 'www',           // 主机记录
-    'record'   => 'A',             // 记录类型：A/AAAA/CNAME/MX/TXT...
-    'value'    => '192.168.1.1',   // 记录值
-    'ttl'      => 600,             // TTL（秒）
-    'priority' => 10,              // MX 优先级（可选）
-    'line'     => 'default',       // 解析线路（可选）
-]);
-// 返回 ['code' => 200, 'message' => 'Record added successfully', 'data' => ['recordId' => '...']]
-```
-
-### 17.7 更新解析记录
-
-```php
-$result = $dns->update([
-    'recordId' => '123456789',     // 必填：记录 ID
-    'rr'       => 'www',           // 可选
-    'record'   => 'A',             // 可选
-    'value'    => '10.0.0.1',      // 可选
-    'ttl'      => 300,             // 可选
-]);
-```
-
-### 17.8 删除解析记录
-
-```php
-// 方式一：通过 recordId 删除
-$result = $dns->del(['recordId' => '123456789']);
-
-// 方式二：通过域名+主机记录自动查找并删除
-$result = $dns->del([
-    'domain' => 'example.com',
-    'rr'     => 'www',
-]);
-```
-
-### 17.9 设置记录状态
-
-```php
-// 启用记录
-$result = $dns->setStatus([
-    'recordId' => '123456789',
-    'status'   => 'enable',
-]);
-
-// 禁用记录
-$result = $dns->setStatus([
-    'recordId' => '123456789',
-    'status'   => 'disable',
-]);
-```
-
-### 17.10 修改备注
-
-```php
-$result = $dns->remark([
-    'recordId' => '123456789',
-    'remark'   => '这是新的备注信息',
-]);
-```
-
----
-
-## 十八、IP 地址获取
-
-```php
-use XiaoPHP\systools\System\Ipaddr;
-
-$ip = Ipaddr::get();
-// 返回 $_SERVER['REMOTE_ADDR'] 或 'unknown'
-```
-
----
-
-## 十九、错误处理与调试
-
-### 19.1 错误响应函数
-
-```php
-// 发送错误响应
-Error(404, '页面未找到');
-Error(401, '未授权访问');
-Error(403, '禁止访问');
-Error(500, '服务器内部错误');
-```
-
-根据 `App.php` 中 `error` 配置决定响应格式：
-- `html`：返回 `Error/` 目录下对应的 HTML 页面（如 `Error/404.html`）
-- `json`：返回 JSON 格式错误信息
-
-### 19.2 调试模式
-
-在 `.env` 中设置 `DEBUG=true` 开启调试模式。当发生未捕获异常时：
-
-- **开发模式**（`DEBUG=true`）：显示详细的错误页面，包含：
-  - 异常类型和消息
-  - 出错文件和行号
-  - 代码片段（错误行高亮，前后各 7 行）
-  - 完整调用堆栈
-  - 请求上下文（GET/POST/SESSION/COOKIE/SERVER）
-  - 客户端 IP、PHP 版本、当前时间
-
-- **生产模式**（`DEBUG=false`）：显示简洁的"系统繁忙"提示，错误信息写入 PHP 错误日志。
-
-### 19.3 自定义错误页面
-
-在 `XiaoPHP/Error/` 目录下创建 HTML 文件：
-- `401.html` - 未授权
-- `403.html` - 禁止访问
-- `404.html` - 页面未找到
-
----
-
-## 二十、Web 服务器配置
-
-### 20.1 Apache
-
-项目已自带 `.htaccess`（位于 `Public/.htaccess`），确保已启用 `mod_rewrite`：
+确保开启 mod\_rewrite 模块，Public 目录下已自带 \.htaccess 文件：
 
 ```apache
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ index.php/$1 [QSA,PT,L]
-</IfModule>
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [QSA,PT,L]
 ```
 
-### 20.2 Nginx
+### Nginx 部署
 
-参考 `Public/nginx.htaccess`，在 Nginx 配置中添加：
+参考 Public/nginx\.htaccess 文件配置伪静态：
 
 ```nginx
 location / {
@@ -1025,130 +59,690 @@ location / {
 }
 ```
 
-完整示例：
-
-```nginx
-server {
-    listen 80;
-    server_name example.com;
-    root /path/to/XiaoPHPV1.5/Public;
-    index index.php;
-
-    # 隐藏 .env 文件（重要）
-    location ~ /\.env {
-        deny all;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.php?$args;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-}
-```
-
-### 20.3 PHP 内置服务器
-
-开发时可直接使用：
+### 开发调试（PHP 内置服务器）
 
 ```bash
-php -S localhost:8080 -t Public/ Public/router.php
+cd Public
+php -S localhost:8000 router.php
 ```
 
-`router.php` 会自动处理静态文件请求，其他请求转发到 `index.php`。
+# 四、目录结构
 
----
+```text
+XiaoPHP/
+├── App/
+│   ├── Func/          # 自定义函数目录（自动加载）
+│   └── Run/           # 控制器目录
+├── Config/            # 配置文件目录
+│   ├── App.php        # 应用配置
+│   ├── Cache.php      # 缓存配置
+│   ├── Logs.php       # 日志配置
+│   ├── Middleware.php # 中间件配置
+│   ├── Mysql.php      # 数据库配置
+│   ├── Redis.php      # Redis配置
+│   └── AliyunDns.php  # 阿里云DNS配置
+├── Public/            # 网站入口目录
+│   ├── index.php      # 入口文件
+│   ├── router.php     # 内置服务器路由
+│   └── .htaccess      # Apache伪静态
+├── Route/             # 自定义路由
+│   └── Route.php
+├── Temp/              # 临时文件目录
+│   └── Cache/         # 文件缓存目录
+├── logs/              # 日志目录
+│   ├── success/       # 成功请求日志
+│   └── error/         # 失败请求日志
+├── view/              # 视图模板目录
+├── Whitelist/         # 路由白名单
+│   └── Whitelist.php
+├── XiaoPHP/           # 框架核心目录
+│   ├── Tools/
+│   │   ├── System/    # 系统工具类
+│   │   └── Code/      # 业务工具类
+│   ├── Error/         # 错误页面
+│   ├── console.php    # 框架引导文件
+│   ├── debug.php      # 调试信息展示
+│   ├── Middleware.php # 中间件核心
+│   ├── Routing.php    # 路由分发
+│   └── xiao.php       # 控制台彩蛋
+├── vendor/            # Composer自动加载
+├── .env               # 环境变量配置
+├── composer.json
+└── composer.lock
+```
 
-## 附录：完整示例
+# 五、配置说明
 
-### 创建一个完整的 API 接口
+## 5\.1 环境变量 \.env
 
-**1. 创建控制器 `App/Run/Api.php`：**
+框架采用环境变量优先策略，\.env 文件配置会覆盖配置文件默认值。
+
+```ini
+# MySQL配置
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=xiaophp
+DB_USER=root
+DB_PASSWORD=123456
+
+# Redis配置
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# 框架配置
+DEBUG=true
+ERROR_FORMAT=html
+```
+
+## 5\.2 应用配置 Config/App\.php
 
 ```php
-<?php
-// App/Run/Api.php
-
-use XiaoPHP\systools\Middleware;
-use XiaoPHP\systools\toolsbox\Json;
-
-class Api
-{
-    public function Main()
-    {
-        // 令牌验证
-        (new Middleware())->check();
-
-        // 获取用户列表
-        $users = db()->table('users')->get();
-
-        Json::encode([
-            'code' => 200,
-            'msg'  => '成功',
-            'data' => $users,
-        ]);
-    }
-
-    public function Create()
-    {
-        (new Middleware())->check();
-
-        $name  = $_POST['name']  ?? '';
-        $email = $_POST['email'] ?? '';
-
-        if (empty($name)) {
-            Json::encode(['code' => 400, 'msg' => '名称不能为空']);
-        }
-
-        $id = db()->table('users')->insert([
-            'name'  => $name,
-            'email' => $email,
-        ]);
-
-        Json::encode([
-            'code' => 200,
-            'msg'  => '创建成功',
-            'data' => ['id' => $id],
-        ]);
-    }
-}
+return [
+    "debug" => 'true',   // 调试模式：true | false
+    "error" => 'html',   // 错误格式：html | json
+];
 ```
 
-**2. 配置自定义路由 `Route/Route.php`：**
+## 5\.3 数据库配置 Config/Mysql\.php
+
+```php
+return [
+    "host"     => '127.0.0.1',
+    "port"     => '3306',
+    "dbname"   => 'xiaophp',
+    "user"     => 'root',
+    "password" => '',
+];
+```
+
+## 5\.4 中间件配置 Config/Middleware\.php
+
+```php
+return [
+    "storage"       => 'cache',              // 存储方式：cache | redis
+    "token_key"     => 'token',              // Token参数名
+    "auth_mode"     => 'bearer,get,post,cookie', // 认证方式
+    "cookie_name"   => 'auth_token',         // Cookie名称
+    "cookie_expire" => '7200',               // 默认过期时间(秒)
+];
+```
+
+## 5\.5 缓存配置 Config/Cache\.php
+
+```php
+return [
+    "dir"    => '',     // 缓存目录，默认Temp/Cache
+    "expire" => 3600,   // 默认过期时间(秒)
+];
+```
+
+## 5\.6 日志配置 Config/Logs\.php
+
+```php
+return [
+    "success" => true,  // 记录成功请求
+    "error"   => true,  // 记录失败请求
+];
+```
+
+# 六、路由系统
+
+## 6\.1 自动路由（默认）
+
+URL 格式：`域名/控制器名/方法名`
+
+|URL|控制器文件|执行方法|
+|---|---|---|
+|/|App/Run/Index\.php|Main\(\)|
+|/index|App/Run/Index\.php|Main\(\)|
+|/user|App/Run/User\.php|Main\(\)|
+|/user/login|App/Run/User\.php|login\(\)|
+
+**1\.6 新特性：**路由、控制器文件名、方法名均**不区分大小写**。URL 中的 Query 参数（?id=1）不会影响路由匹配。
+
+## 6\.2 自定义路由
+
+在 Route/Route\.php 中配置：
 
 ```php
 use XiaoPHP\systools\Config\Route;
 
-Route::add("GET",  "/api/users",     "Api",       "App/Run");
-Route::add("POST", "/api/user/create", "Api/Create", "App/Run");
+// 格式：Route::add(请求方法, 路由路径, 控制器/方法, 控制器目录)
+Route::add("GET", "/", "Index/Main", "App/Run");
+Route::add("POST", "/api/user", "User/add", "App/Run");
 ```
 
-**3. 配置白名单 `Whitelist/Whitelist.php`（可选）：**
+自定义路由优先级高于自动路由。请求方法不匹配时返回 405 错误。
+
+# 七、控制器
+
+## 7\.1 创建控制器
+
+在 App/Run/ 目录下创建 PHP 文件，文件名与类名一致：
+
+```php
+<?php
+// App/Run/User.php
+use XiaoPHP\systools\toolsbox\View;
+use app\tools\MysqlTools;
+
+class User
+{
+    // 默认方法：Main()，访问 /user
+    public function Main()
+    {
+        $view = new View();
+        $view->set(["title" => "用户列表"], "user")->show("index");
+    }
+
+    // 访问 /user/login
+    public function login()
+    {
+        return "登录页面";
+    }
+
+    // 访问 /user/list，返回JSON
+    public function list()
+    {
+        $db = new MysqlTools();
+        $users = $db->table("users")->limit(10)->get();
+        return json_encode($users);
+    }
+}
+```
+
+## 7\.2 控制器规范
+
+- 默认方法名为 `Main()`
+
+- 方法名不区分大小写（1\.6 特性）
+
+- 控制器方法可以直接 return 输出内容
+
+- 控制器类不需要继承任何基类
+
+# 八、视图引擎
+
+## 8\.1 模板语法
+
+模板文件放在 view/ 目录下，使用 \.html 扩展名。
+
+|语法|说明|示例|
+|---|---|---|
+|\{\{$变量名\}\}|输出普通变量|\{\{$title\}\}|
+|\{\{$变量\.子属性\}\}|输出数组属性|\{\{$user\.name\}\}|
+
+## 8\.2 基本用法
+
+```php
+use XiaoPHP\systools\toolsbox\View;
+
+$view = new View();
+
+// 链式调用
+$view->set(["title" => "首页", "content" => "欢迎"], "index")->show("index");
+
+// 分步调用（数据自动合并）
+$view->set(["title" => "首页"]);
+$view->set(["content" => "欢迎"]);
+$view->show("index");
+```
+
+## 8\.3 子目录模板
+
+```php
+// 渲染 view/user/login.html
+$view->set(["title" => "登录"], "user")->show("login");
+```
+
+**安全机制：**视图引擎自动过滤路径穿越（\.\.），并通过 realpath\(\) 确保模板文件在 view/ 目录内，防止任意文件读取漏洞。
+
+# 九、数据库操作
+
+## 9\.1 基本查询
+
+```php
+use app\tools\MysqlTools;
+
+$db = new MysqlTools();
+
+// 查询所有
+$users = $db->table("users")->get();
+
+// 查询单条
+$user = $db->table("users")->where("id", "1")->first();
+
+// 链式条件查询
+$list = $db->table("users")
+    ->where("status", "1")
+    ->where("age", ">= 18")
+    ->order("id desc")
+    ->limit(10)
+    ->offset(0)
+    ->get();
+```
+
+## 9\.2 where 条件
+
+```php
+// 等于（默认）
+$db->table("users")->where("id", "1");
+
+// 比较运算符
+$db->table("users")->where("age", ">= 18");
+$db->table("users")->where("status", "!= 0");
+
+// IN 查询
+$db->table("users")->where("id", [1, 2, 3, 5]);
+```
+
+## 9\.3 模糊查询
+
+```php
+// 两端模糊：%keyword%
+$db->table("users")->whereLike("name", "张三");
+
+// 左模糊：%keyword
+$db->table("users")->whereLike("name", "张三", "left");
+
+// 右模糊：keyword%
+$db->table("users")->whereLike("name", "张三", "right");
+
+// 多列模糊搜索（OR关系）
+$db->table("users")->whereMultiLike(["name", "email", "phone"], "关键词");
+
+// 全表所有列模糊搜索
+$db->table("users")->whereFullLike("关键词");
+```
+
+## 9\.4 写入操作
+
+```php
+// 插入数据，返回自增ID
+$id = $db->table("users")->insert([
+    "name"   => "张三",
+    "email"  => "zhangsan@example.com",
+    "status" => 1,
+]);
+
+// 更新数据（必须带WHERE条件，防止全表更新）
+$affected = $db->table("users")
+    ->where("id", "1")
+    ->update([
+        "name"   => "李四",
+        "status" => 0,
+    ]);
+
+// 删除数据（必须带WHERE条件，防止全表删除）
+$db->table("users")->where("id", "1")->delete();
+```
+
+## 9\.5 辅助方法
+
+```php
+// 获取ID范围
+$range = $db->table("users")->getMinMaxId();
+// 返回：["min_id" => 1, "max_id" => 1000]
+```
+
+**安全提醒：**update 和 delete 操作必须带 where 条件，否则框架会抛出错误，防止误操作全表。所有查询使用 PDO 预处理，防 SQL 注入。
+
+# 十、Redis 缓存
+
+## 10\.1 基本使用
+
+```php
+use app\tools\RedisTools;
+
+$redis = new RedisTools();
+
+// 字符串操作
+$redis->set("key", "value", 3600);  // 设置，带过期时间(秒)
+$value = $redis->get("key");        // 获取
+$redis->del("key");                 // 删除
+$exists = $redis->exists("key");    // 判断是否存在
+
+// 检查Redis是否可用
+$available = $redis->isAvailable();
+```
+
+**自动容错：**Redis 连接失败时不会抛出致命错误，中间件等功能会自动降级到文件缓存。
+
+# 十一、文件缓存
+
+无需 Redis 也能使用的轻量缓存，基于文件存储。
+
+```php
+use XiaoPHP\systools\System\Cache;
+
+$cache = new Cache();
+
+// 设置缓存
+$cache->set("key", ["data" => "value"], 3600);
+
+// 获取缓存
+$data = $cache->get("key");
+
+// 删除缓存
+$cache->delete("key");
+
+// 清空所有缓存
+$cache->clear();
+```
+
+缓存文件存储在 Temp/Cache/ 目录，key 自动用 md5 命名，自动过期清理。
+
+# 十二、中间件与 Token 认证
+
+框架内置 Token 认证中间件，支持多种认证方式和存储后端。
+
+## 12\.1 启用中间件
+
+在控制器方法中调用：
+
+```php
+use XiaoPHP\systools\Middleware;
+
+class User
+{
+    public function info()
+    {
+        // 执行Token校验，失败自动返回401
+        $middleware = new Middleware();
+        $middleware->check();
+
+        // 校验通过，继续业务逻辑
+        return "用户信息";
+    }
+}
+```
+
+## 12\.2 签发 Token
+
+```php
+$middleware = new Middleware();
+
+// 签发Token，自动根据配置存储（Redis或文件缓存）
+// Cookie模式会自动设置HttpOnly Cookie
+$token = md5(uniqid());
+$middleware->setToken($token, ["uid" => 1, "username" => "admin"], 7200);
+```
+
+## 12\.3 销毁 Token
+
+```php
+$middleware = new Middleware();
+$middleware->delToken($token);
+```
+
+## 12\.4 支持的认证方式
+
+- **bearer**：HTTP 请求头 Authorization: Bearer xxx
+
+- **get**：URL 参数 ?token=xxx
+
+- **post**：POST 参数 token=xxx
+
+- **cookie**：Cookie 自动读取
+
+可同时配置多种方式，按顺序依次尝试获取。
+
+# 十三、白名单机制
+
+在 Whitelist/Whitelist\.php 中配置不需要认证的路由：
 
 ```php
 use XiaoPHP\systools\Config\Whitelist;
 
-// 注册接口不需要认证
-Whitelist::add("/api/user/register");
+Whitelist::add("/Index/Main");
+Whitelist::add("/api/health");
+Whitelist::add("/api/public/*");  // 支持通配符
 ```
 
-**4. 访问接口：**
+中间件 check\(\) 时，白名单内的路径直接放行，不校验 Token。
 
-```bash
-# 获取用户列表
-curl -H "Authorization: Bearer your_token" http://localhost:8080/api/users
+# 十四、加密工具
 
-# 创建用户
-curl -X POST -H "Authorization: Bearer your_token" \
-  -d "name=小明&email=xm@test.com" \
-  http://localhost:8080/api/user/create
+## 14\.1 AES 加密
+
+```php
+use XiaoPHP\systools\System\AesTools;
+
+// 加密
+$encrypted = AesTools::encrypt("明文", "密钥");
+
+// 解密
+$decrypted = AesTools::decrypt($encrypted, "密钥");
 ```
 
----
+## 14\.2 RSA 加密
 
-> 文档版本：V1.5.0 | 最后更新：2026-07-14
+```php
+use XiaoPHP\systools\System\RSATools;
+
+// 公钥加密
+$encrypted = RSATools::publicEncrypt("明文", $publicKey);
+
+// 私钥解密
+$decrypted = RSATools::privateDecrypt($encrypted, $privateKey);
+```
+
+# 十五、HTTP 请求工具（Wget）
+
+基于 cURL 封装的 HTTP 请求类，支持 5 种请求方式。
+
+```php
+use XiaoPHP\systools\toolsbox\Wget;
+
+// GET 请求
+$response = Wget::get("https://api.example.com/data");
+
+// POST 表单提交
+$response = Wget::post("https://api.example.com/submit", [
+    "name"  => "张三",
+    "email" => "test@example.com",
+]);
+
+// POST JSON（传字符串自动设Content-Type）
+$response = Wget::post("https://api.example.com/api", json_encode($data));
+
+// PUT 请求
+$response = Wget::put("https://api.example.com/update/1", $data);
+
+// DELETE 请求
+$response = Wget::delete("https://api.example.com/delete/1");
+
+// 下载文件
+$result = Wget::download("https://example.com/file.zip", "/path/to/save.zip");
+
+// 开启SSL验证（默认关闭）
+$response = Wget::get("https://api.example.com", true);
+
+// 自定义curl选项
+$response = Wget::get($url, false, [
+    CURLOPT_TIMEOUT => 60,
+    CURLOPT_HTTPHEADER => ["Authorization: Bearer xxx"],
+]);
+```
+
+# 十六、Json 工具
+
+```php
+use XiaoPHP\systools\toolsbox\Json;
+
+// 输出JSON响应（自动设header并exit）
+Json::encode(["code" => 200, "msg" => "success", "data" => []]);
+
+// 解析JSON
+$data = Json::decode($jsonString);
+
+// 直接请求远程URL并解析JSON
+$data = Json::wdecode("https://api.example.com/data.json");
+```
+
+# 十七、阿里云 DNS
+
+内置阿里云 DNS API 封装，可直接操作域名解析。
+
+```php
+use app\tools\AliyunDns;
+
+$dns = new AliyunDns();
+
+// 获取域名列表
+$domains = $dns->getDomainList();
+
+// 获取解析记录
+$records = $dns->getRecords("example.com");
+
+// 添加解析记录
+$dns->addRecord("example.com", "www", "A", "1.2.3.4");
+
+// 修改解析记录
+$dns->updateRecord($recordId, "www", "A", "5.6.7.8");
+
+// 删除解析记录
+$dns->deleteRecord($recordId);
+
+// 启用/禁用解析
+$dns->setRecordStatus($recordId, "Enable");
+```
+
+使用前需在 Config/AliyunDns\.php 配置 AccessKey。
+
+# 十八、IP 获取工具
+
+```php
+use XiaoPHP\systools\System\Ipaddr;
+
+// 获取客户端真实IP
+$ip = Ipaddr::get();
+```
+
+自动识别 X\-Forwarded\-For、HTTP\_CLIENT\_IP 等代理头，支持 CDN 和反向代理环境。
+
+# 十九、日志系统
+
+框架自动记录所有请求日志，按天分割文件。
+
+## 19\.1 日志分类
+
+- **成功日志：**logs/success/YYYY\-MM\-DD\.logs
+
+- **失败日志：**logs/error/YYYY\-MM\-DD\.logs
+
+## 19\.2 日志格式
+
+```
+success 2026-07-14 12:00:00--[192.168.1.1]:/index-code:200
+error 2026-07-14 12:01:00--[192.168.1.1]:/notfound-code:404
+```
+
+## 19\.3 手动记录日志
+
+```php
+use XiaoPHP\systools\System\Logs;
+
+$log = new Logs();
+$log->logs(0, 200);  // 成功日志
+$log->logs(1, 500);  // 错误日志
+```
+
+# 二十、自定义函数
+
+在 App/Func/ 目录下创建的 \.php 文件会被自动加载，适合放全局辅助函数：
+
+```php
+<?php
+// App/Func/helpers.php
+
+function dd($var) {
+    var_dump($var);
+    die;
+}
+
+function format_date($timestamp) {
+    return date("Y-m-d H:i:s", $timestamp);
+}
+```
+
+# 二十一、错误处理与调试
+
+## 21\.1 调试模式
+
+通过 \.env 的 DEBUG 参数控制：
+
+- **开启（true）：**展示详细错误信息、调用堆栈、变量信息
+
+- **关闭（false）：**生产环境，只返回简洁错误页
+
+## 21\.2 错误页面
+
+|错误码|说明|模板文件|
+|---|---|---|
+|400|请求参数错误|通用错误页|
+|401|未授权|Error/401\.html|
+|403|禁止访问|Error/403\.html|
+|404|页面不存在|Error/404\.html|
+|405|请求方法不允许|通用错误页|
+|500|服务器内部错误|通用错误页|
+
+## 21\.3 三层错误捕获
+
+- 普通错误：set\_error\_handler 捕获
+
+- 未捕获异常：set\_exception\_handler 捕获
+
+- 致命错误：register\_shutdown\_function 捕获
+
+## 21\.4 错误输出格式
+
+通过 error 配置控制：
+
+- **html：**返回美观的错误页面，适合网站项目
+
+- **json：**返回 JSON 格式错误，适合 API 项目
+
+# 二十二、V1\.6 版本更新日志
+
+## 主要更新
+
+- **路由不区分大小写：**URL、控制器文件名、方法名均不区分大小写，兼容性更好
+
+- **URL 参数自动剥离：**Query String 不会影响路由匹配
+
+- **白名单支持通配符：**Whitelist::add\("/api/\*"\) 支持批量匹配
+
+- **开源协议变更：**从 MIT 调整为 Apache\-2\.0
+
+- **中间件路径统一小写：**白名单匹配更准确
+
+- **白名单自动加载：**无需手动引入，框架启动时自动加载
+
+- **中间件自动加载：**框架启动时自动加载 Middleware 类
+
+- **Temp 目录回归：**文件缓存目录正式纳入发行包
+
+## 兼容性说明
+
+- 1\.5 升级 1\.6 基本无缝，路由大小写不敏感属于增强功能
+
+- 控制器写法、工具类调用方式与 1\.5 完全一致
+
+- 开源协议变更为 Apache\-2\.0，商用更友好
+
+# 二十三、最佳实践
+
+1. **生产环境务必关闭 DEBUG：**避免泄露敏感信息
+
+2. **网站根目录指向 Public：**保护配置文件和核心代码不被直接访问
+
+3. **设置正确的文件权限：**logs/ 和 Temp/ 目录需要写入权限
+
+4. **API 项目用 json 错误格式：**Config/App\.php 中 error 设为 json
+
+5. **有 Redis 优先用 Redis：**中间件 Token 存储性能更好
+
+6. **数据库操作必须带 where：**框架已做强制校验，养成好习惯
+
