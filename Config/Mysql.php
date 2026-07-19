@@ -1,12 +1,12 @@
 <?php
 /**
  * 数据库配置
- * Date: 2026-07-14
+ * Date: 2026-07-18
  * Author: 小新
  * SystemName: XiaoPHP
  */
 
-use XiaoPHP\systools\Config\Env;
+use XiaoPHP\System\Config\Env;
 
 return [
     "host"     => Env::Load(null, "DB_HOST") ?? 'localhost',  // 数据库主机地址

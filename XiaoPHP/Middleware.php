@@ -2,17 +2,17 @@
 
 /**
  * 中间件类
- * Date: 2026-07-14
+ * Date: 2026-07-18
  * Author: 小新
  * SystemName: XiaoPHP
  */
 
-namespace XiaoPHP\systools;
+namespace XiaoPHP\System;
 
-use XiaoPHP\systools\Config\Conf;
-use XiaoPHP\systools\Config\Whitelist;
-use XiaoPHP\systools\System\Cache;
-use app\tools\RedisTools;
+use XiaoPHP\System\Config\Conf;
+use XiaoPHP\System\Config\Whitelist;
+use XiaoPHP\System\Cache;
+use XiaoPHP\System\Tools\App\RedisTools;
 
 class Middleware
 {
@@ -134,6 +134,7 @@ class Middleware
                 'path'     => '/',
                 'httponly' => true,
                 'samesite' => 'Lax',
+                'secure'   => true,
             ]);
         }
     }
@@ -155,6 +156,7 @@ class Middleware
                 'path'     => '/',
                 'httponly' => true,
                 'samesite' => 'Lax',
+                'secure'   => true,
             ]);
         }
     }

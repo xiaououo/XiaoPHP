@@ -1,0 +1,6 @@
+{
+    "name": "Index",
+    "status": "on",
+    "description": "status值off为关闭应用文件加载,on启用应用文件加载",
+    "version": "1.0.0"
+}

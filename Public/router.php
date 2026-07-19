@@ -1,4 +1,10 @@
 <?php
+/**
+ * URL重写处理
+ * Date: 2026-07-18
+ * Author: 小新
+ * SystemName: XiaoPHP
+ */
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $file = __DIR__ . $uri;

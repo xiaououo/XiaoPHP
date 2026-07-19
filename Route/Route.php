@@ -1,11 +1,12 @@
 <?php
 /**
  * 自定义路由
- * Date: 2026-07-14
+ * Date: 2026-07-18
  * Author: 小新
  * SystemName: XiaoPHP
  */
 
-use XiaoPHP\systools\Config\Route;
+use XiaoPHP\System\Config\Route;
 
-Route::add("GET","/", "Index","App/Run"); //配置默认路由
+// 默认路由
+Route::add("GET", "/", "Index", "Index");

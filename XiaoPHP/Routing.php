@@ -1,22 +1,30 @@
 <?php
 /**
  * 系统路由
- * Date: 2026-07-14
+ * Date: 2026-07-18
  * Author: 小新
  * SystemName: XiaoPHP
  */
 
-use XiaoPHP\systools\Config\Env;
-use XiaoPHP\systools\Config\Route;
-use XiaoPHP\systools\System\Logs;
+use XiaoPHP\System\Config\Env;
+use XiaoPHP\System\Config\Route;
+use XiaoPHP\System\Logs;
+use XiaoPHP\System\Helper;
+use XiaoPHP\System\Middleware;
+
+
+// 中间件检查（白名单路径会自动跳过）
+$middleware = new Middleware();
+$middleware->check();
 
 // 解析请求路径
 $path = trim($_SERVER["REQUEST_URI"], "/");
 $path = strtok($path, "?");
 $pathLower = strtolower($path);
 $segments = explode("/", $pathLower);
-$controller = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[0] ?? "");
-$method = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[1] ?? "");
+$app = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[0] ?? "");
+$controller = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[1] ?? "");
+$method = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[2] ?? "");
 
 // 自定义路由
 $route = Route::find("/" . $path);
@@ -41,13 +49,14 @@ if ($route) {
     $controllerMethod = $controllerInfo[1] ?? "Main";
 
     // 验证控制器文件（不区分大小写）
-    $controllerFilePath = findFileCaseInsensitive(__DIR__ . "/../" . $controllerName, $controllerFile . ".php");
+    $controllerFilePath = Helper::findFileCaseInsensitive(__DIR__ . "/../" . $controllerName, $controllerFile . ".php");
     if ($controllerFilePath === null) {
         (new Logs())->logs(1, 404);
         Error(404, "控制器文件不存在");
     }
 
-    // 加载控制器
+    // 加载同目录下的兄弟文件（基类如 AdminBase、DocsBase），再加载目标控制器
+    Helper::loadSiblingControllers($controllerFilePath);
     include_once $controllerFilePath;
     if (!class_exists($controllerFile)) {
         (new Logs())->logs(1, 404);
@@ -56,7 +65,7 @@ if ($route) {
 
     // 实例化控制器并执行方法（方法名不区分大小写）
     $controllerInstance = new $controllerFile();
-    $realMethod = findMethodCaseInsensitive($controllerInstance, $controllerMethod);
+    $realMethod = Helper::findMethodCaseInsensitive($controllerInstance, $controllerMethod);
     if ($realMethod !== null) {
         echo $controllerInstance->{$realMethod}();
         (new Logs())->logs(0, 200);
@@ -69,32 +78,40 @@ if ($route) {
 }
 
 // 自动路由
-if (!empty($controller)) {
-    // 验证控制器文件（不区分大小写）
-    $controllerFilePath = findFileCaseInsensitive(__DIR__ . "/../App/Run/", $controller . ".php");
+if (!empty($app)) {
+    $appDir = Helper::findDirCaseInsensitive(__DIR__ . "/../App", $app);
+    if ($appDir === null) {
+        (new Logs())->logs(1, 404);
+        Error(404, "应用不存在");
+    }
+
+    if (empty($controller)) {
+        (new Logs())->logs(1, 400);
+        Error(404, "控制器未指定");
+    }
+
+    $controllerDir = $appDir . "/Controller";
+    $controllerFilePath = Helper::findFileCaseInsensitive($controllerDir, $controller . ".php");
     if ($controllerFilePath === null) {
         (new Logs())->logs(1, 404);
         Error(404, "控制器文件不存在");
     }
 
-    // 从文件路径中提取真实的控制器类名
     $realController = pathinfo($controllerFilePath, PATHINFO_FILENAME);
 
-    // 加载控制器
+    // 加载同目录下的兄弟文件（基类如 AdminBase、DocsBase），再加载目标控制器
+    Helper::loadSiblingControllers($controllerFilePath);
     include_once $controllerFilePath;
     if (!class_exists($realController)) {
         (new Logs())->logs(1, 404);
         Error(404, "控制器类不存在");
     }
 
-    // 实例化控制器
     $controllerInstance = new $realController();
 
-    // 确定要执行的方法（方法名不区分大小写）
     $methodName = !empty($method) ? $method : "Main";
-    $realMethod = findMethodCaseInsensitive($controllerInstance, $methodName);
+    $realMethod = Helper::findMethodCaseInsensitive($controllerInstance, $methodName);
 
-    // 验证并执行方法
     if ($realMethod !== null) {
         echo $controllerInstance->{$realMethod}();
         (new Logs())->logs(0, 200);
@@ -103,41 +120,8 @@ if (!empty($controller)) {
         Error(404, "控制器方法不存在");
     }
 } else {
-    (new Logs())->logs(1, 400);
-    Error(400, "控制器未指定");
-}
-
-/**
- * 不区分大小写查找文件
- */
-function findFileCaseInsensitive(string $directory, string $filename): ?string
-{
-    $lowerFilename = strtolower($filename);
-    $files = glob($directory . "/*.php");
-    if ($files === false) {
-        return null;
-    }
-    foreach ($files as $file) {
-        if (strtolower(basename($file)) === $lowerFilename) {
-            return $file;
-        }
-    }
-    return null;
-}
-
-/**
- * 不区分大小写查找方法名
- */
-function findMethodCaseInsensitive(object $instance, string $methodName): ?string
-{
-    $lowerMethod = strtolower($methodName);
-    $methods = get_class_methods($instance);
-    foreach ($methods as $m) {
-        if (strtolower($m) === $lowerMethod) {
-            return $m;
-        }
-    }
-    return null;
+    (new Logs())->logs(1, 404);
+    Error(404, "应用未指定");
 }
 
 exit(0);

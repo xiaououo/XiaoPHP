@@ -1,5 +1,12 @@
 <?php
-use XiaoPHP\systools\Config\Conf;
+/**
+ * 调试信息显示
+ * Date: 2026-07-18
+ * Author: 小新
+ * SystemName: XiaoPHP
+ */
+
+use XiaoPHP\System\Config\Conf;
 
 function displayDebugInfo(Throwable $exception)
 {

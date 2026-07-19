@@ -6,7 +6,8 @@
  * SystemName: XiaoPHP
  */
 
-use XiaoPHP\systools\Config\Whitelist;
+use XiaoPHP\System\Config\Whitelist;
 
-Whitelist::add("/Index/Main");
-Whitelist::add("/api/health");
+// 首页与默认入口
+// 白名单路由：允许所有路由访问
+Whitelist::add("/");
