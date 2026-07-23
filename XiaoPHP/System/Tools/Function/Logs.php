@@ -32,11 +32,18 @@ class Logs
             mkdir($logDir, 0755, true);
         }
 
+        // 获取并清理请求路径：移除换行符和控制字符，防止日志注入
+        $rawPath = $_SERVER["REQUEST_URI"] ?? "/";
+        $cleanPath = urldecode(parse_url($rawPath, PHP_URL_PATH));
+        $cleanPath = preg_replace('/[\x00-\x1f\x7f]/', '', $cleanPath);
+        $cleanPath = str_replace(["
+", "\n"], '', $cleanPath);
+
         $line =
             $type . " " .
             date("Y-m-d H:i:s") .
             "--[" . $this->clientIp() . "]:" .
-            urldecode(parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH)) .
+            $cleanPath .
             "-code:" . $code;
 
         file_put_contents(

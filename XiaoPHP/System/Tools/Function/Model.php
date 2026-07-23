@@ -122,7 +122,7 @@ class Model
         foreach ($where as $key => $value) {
             $data->where($key, $value);
         }
-        $data = $data->limit($size)->offset($offset)->get();
+        $data = $data->order('id', 'DESC')->limit($size)->offset($offset)->get();
         return [
             'data'  => $data,
             'total' => $total,

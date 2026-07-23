@@ -11,10 +11,13 @@ use XiaoPHP\System\Config\Route;
 use XiaoPHP\System\Logs;
 use XiaoPHP\System\Helper;
 use XiaoPHP\System\Middleware;
+use XiaoPHP\System\Container;
 
+// 获取容器实例
+$container = Container::getInstance();
 
 // 中间件检查（白名单路径会自动跳过）
-$middleware = new Middleware();
+$middleware = $container->make(Middleware::class);
 $middleware->check();
 
 // 解析请求路径
@@ -26,8 +29,8 @@ $app = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[0] ?? "");
 $controller = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[1] ?? "");
 $method = preg_replace("/[^a-zA-Z0-9_-]/", "", $segments[2] ?? "");
 
-// 自定义路由
-$route = Route::find("/" . $path);
+// 自定义路由（使用小写路径匹配，因为路由存储时已转换为小写）
+$route = Route::find("/" . $pathLower, $_SERVER['REQUEST_METHOD']);
 
 if ($route) {
     $routeParts = explode(":", $route);
@@ -39,7 +42,7 @@ if ($route) {
     
     // 验证请求方法
     if ($_SERVER['REQUEST_METHOD'] !== $requestMethod) {
-        (new Logs())->logs(1, 405);
+        $container->make(Logs::class)->logs(1, 405);
         Error(405, "请求方法不允许");
     }
 
@@ -51,26 +54,26 @@ if ($route) {
     // 验证控制器文件（不区分大小写）
     $controllerFilePath = Helper::findFileCaseInsensitive(__DIR__ . "/../" . $controllerName, $controllerFile . ".php");
     if ($controllerFilePath === null) {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器文件不存在");
     }
 
-    // 加载同目录下的兄弟文件（基类如 AdminBase、DocsBase），再加载目标控制器
+    // 加载同目录下的兄弟文件
     Helper::loadSiblingControllers($controllerFilePath);
     include_once $controllerFilePath;
     if (!class_exists($controllerFile)) {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器类不存在");
     }
 
-    // 实例化控制器并执行方法（方法名不区分大小写）
-    $controllerInstance = new $controllerFile();
+    // 通过容器实例化控制器
+    $controllerInstance = $container->make($controllerFile);
     $realMethod = Helper::findMethodCaseInsensitive($controllerInstance, $controllerMethod);
     if ($realMethod !== null) {
         echo $controllerInstance->{$realMethod}();
-        (new Logs())->logs(0, 200);
+        $container->make(Logs::class)->logs(0, 200);
     } else {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器方法不存在");
     }
     
@@ -81,19 +84,19 @@ if ($route) {
 if (!empty($app)) {
     $appDir = Helper::findDirCaseInsensitive(__DIR__ . "/../App", $app);
     if ($appDir === null) {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "应用不存在");
     }
 
     if (empty($controller)) {
-        (new Logs())->logs(1, 400);
+        $container->make(Logs::class)->logs(1, 400);
         Error(404, "控制器未指定");
     }
 
     $controllerDir = $appDir . "/Controller";
     $controllerFilePath = Helper::findFileCaseInsensitive($controllerDir, $controller . ".php");
     if ($controllerFilePath === null) {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器文件不存在");
     }
 
@@ -103,24 +106,25 @@ if (!empty($app)) {
     Helper::loadSiblingControllers($controllerFilePath);
     include_once $controllerFilePath;
     if (!class_exists($realController)) {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器类不存在");
     }
 
-    $controllerInstance = new $realController();
+    // 通过容器实例化控制器（支持依赖注入）
+    $controllerInstance = $container->make($realController);
 
     $methodName = !empty($method) ? $method : "Main";
     $realMethod = Helper::findMethodCaseInsensitive($controllerInstance, $methodName);
 
     if ($realMethod !== null) {
         echo $controllerInstance->{$realMethod}();
-        (new Logs())->logs(0, 200);
+        $container->make(Logs::class)->logs(0, 200);
     } else {
-        (new Logs())->logs(1, 404);
+        $container->make(Logs::class)->logs(1, 404);
         Error(404, "控制器方法不存在");
     }
 } else {
-    (new Logs())->logs(1, 404);
+    $container->make(Logs::class)->logs(1, 404);
     Error(404, "应用未指定");
 }
 

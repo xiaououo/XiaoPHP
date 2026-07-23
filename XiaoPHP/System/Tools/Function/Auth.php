@@ -214,13 +214,32 @@ class Auth
     /**
      * 校验 CSRF Token
      *
-     * 注：当前已禁用 CSRF 校验（直接返回 true）。
-     * 原因：session 在浏览器多请求场景下容易出现 token 不一致（如浏览器自动二次请求
-     * 触发 csrfToken() 重新生成覆盖），导致后台写操作频繁提示"令牌无效"。
-     * 如需恢复 CSRF 防护，请改为原有的 hash_equals 比较逻辑。
+     * 使用一次性 Token 模式（校验后自动生成新的替代），
+     * 解决了浏览器自动二次请求导致 Token 不一致的问题。
+     * 同时保留旧的 Token 在短时间内仍然有效（双 Token 机制）。
      */
     public static function checkCsrf(?string $token): bool
     {
-        return true;
+        self::startSession();
+
+        if (empty($token)) {
+            return false;
+        }
+
+        // 获取当前 Token 和上一个 Token
+        $currentToken = $_SESSION['csrf_token'] ?? '';
+        $prevToken = $_SESSION['csrf_token_prev'] ?? '';
+
+        // 匹配当前 Token 或上一个 Token
+        $valid = ($currentToken !== '' && hash_equals($currentToken, $token))
+              || ($prevToken !== '' && hash_equals($prevToken, $token));
+
+        if ($valid) {
+            // 轮换 Token：当前变成上一个，生成新的当前 Token
+            $_SESSION['csrf_token_prev'] = $currentToken;
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+        }
+
+        return $valid;
     }
 }

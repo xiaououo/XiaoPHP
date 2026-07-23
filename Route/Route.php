@@ -10,3 +10,4 @@ use XiaoPHP\System\Config\Route;
 
 // 默认路由
 Route::add("GET", "/", "Index", "Index");
+

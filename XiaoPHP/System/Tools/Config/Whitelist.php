@@ -51,7 +51,9 @@ class Whitelist
                 return true;
             }
             if (strpos($pattern, '*') !== false) {
-                $regex = '#^' . str_replace('\*', '.*', preg_quote($pattern, '#')) . '$#i';
+                $regexPattern = preg_quote($pattern, '#');
+                $regexPattern = str_replace('\*', '.*', $regexPattern);
+                $regex = '#^' . $regexPattern . '$#i';
                 if (preg_match($regex, $url)) {
                     return true;
                 }

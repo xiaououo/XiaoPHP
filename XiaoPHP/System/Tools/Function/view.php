@@ -73,7 +73,8 @@ class View
         ob_start();
         try {
             include $tmp;
-            ob_end_flush();
+            $output = ob_get_contents();
+            ob_end_clean();
         } catch (\Throwable $e) {
             ob_end_clean();
             unlink($tmp);
@@ -81,7 +82,7 @@ class View
         }
         unlink($tmp);
 
-        return $this;
+        return $output;
     }
 
     /**

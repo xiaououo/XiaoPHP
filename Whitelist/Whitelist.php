@@ -8,6 +8,12 @@
 
 use XiaoPHP\System\Config\Whitelist;
 
-// 首页与默认入口
-// 白名单路由：允许所有路由访问
+// 公开路由白名单：以下路径不需要 Token 认证
+// 注意：不要使用 "/*" 通配符，否则中间件认证将完全失效
 Whitelist::add("/");
+Whitelist::add("/login");
+Whitelist::add("/Login/DoLogin");
+Whitelist::add("/Logout");
+Whitelist::add("/register");
+Whitelist::add("/sitemap.xml");
+Whitelist::add("/robots.txt");

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 路由注册类
  * Date: 2026-07-18
@@ -11,9 +12,14 @@ namespace XiaoPHP\System\Config;
     {
         private static $routes = [];
 
-        public static function add($method,$url,$controller,$bootstrap ): void
+        public static function add($method,$url,$controller,$bootstrap, $action = 'Main'): void
             {
-                self::$routes[strtolower($url)] = $method.":".$controller.":"."App/".$bootstrap."/Controller";
+                $url = strtolower($url);
+                $method = strtoupper($method);
+                if (!isset(self::$routes[$url])) {
+                    self::$routes[$url] = [];
+                }
+                self::$routes[$url][$method] = $controller."/".$action.":App/".$bootstrap."/Controller";
             }
 
         public static function get():array
@@ -21,8 +27,13 @@ namespace XiaoPHP\System\Config;
                 return self::$routes;
             }
 
-        public static function find(string $url): ?string
+        public static function find(string $url, string $method = 'GET'): ?string
             {
-                return self::$routes[strtolower($url)] ?? null;
+                $url = strtolower($url);
+                $method = strtoupper($method);
+                if (isset(self::$routes[$url][$method])) {
+                    return $method.":".self::$routes[$url][$method];
+                }
+                return null;
             }
     }

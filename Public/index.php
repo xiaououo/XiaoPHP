@@ -3,7 +3,7 @@
 /**
      * 系统入口
      * Author: 小新
-     * Version: XiaoPHP 2.1.0
+     * Version: XiaoPHP 2.1.1
  */
     ob_start();
     $sessPath = session_save_path() ?: sys_get_temp_dir();

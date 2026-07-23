@@ -6,12 +6,11 @@
  * SystemName: XiaoPHP
  */
 
-use XiaoPHP\System\View;
+
 Class Index
     {
         public function Main()
             {
-                $view = new View();
-                $view->set(["h1"=>"XiaoPHP V 2.0.0","title"=>"Hello World!"])->show("index");
+                echo "你好世界";
             }
     }
