@@ -72,7 +72,8 @@ function loadSystemFiles(string $baseDir): void
         [$baseDir . '/Import/MarkdownImporter.php'],
         [$baseDir . '/Import/DocxImporter.php'],
         [$baseDir . '/../App/Loading.php'],
-        [$baseDir . '/../Route/Route.php']
+        [$baseDir . '/../Route/Route.php'],
+        [$baseDir . '/start.php']
     );
 
     // 去重并加载
